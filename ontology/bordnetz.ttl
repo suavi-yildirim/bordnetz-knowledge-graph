@@ -1,0 +1,70 @@
+# Mini-Ontologie Bordnetz (Demo)
+# Verbindet die Leitungssatz-Sicht (KBL-ähnlich: Stecker, Kontakte, Leitungen, Module)
+# mit der E/E-Sicht (Funktionen, Steuergeräte, Signale) und der Varianten-Sicht.
+#
+# Naming Conventions:
+#   Klassen      UpperCamelCase  (bn:Connector)
+#   Properties   lowerCamelCase  (bn:carriesSignal), Objekt-Properties als Verbphrase
+#   Instanzen    data:<Typ>/<ID>  (data:wire/W01)
+#   Labels       immer de + en
+@prefix bn:   <https://example.org/bordnetz#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<https://example.org/bordnetz> a owl:Ontology ;
+    rdfs:label "Mini-Ontologie Bordnetz (Demo)"@de, "Mini wire-harness ontology (demo)"@en .
+
+# ------------------------------------------------------------ Klassen
+# Leitungssatz-Sicht (Quelle: KBL)
+bn:Harness      a owl:Class ; rdfs:label "Leitungssatz"@de, "Harness"@en .
+bn:Connector    a owl:Class ; rdfs:label "Stecker"@de, "Connector"@en .
+bn:ContactPoint a owl:Class ; rdfs:label "Kontaktstelle"@de, "Contact point"@en .
+bn:Wire         a owl:Class ; rdfs:label "Leitung"@de, "Wire"@en .
+bn:Connection   a owl:Class ; rdfs:label "Verbindung"@de, "Connection"@en ;
+    rdfs:comment "Logische Verbindung zwischen zwei Kontaktstellen, realisiert durch eine Leitung."@de .
+bn:Module       a owl:Class ; rdfs:label "Modul"@de, "Module"@en ;
+    rdfs:comment "Variantenbaustein des Leitungssatzes (z. B. Basis, Komfort)."@de .
+
+# E/E-Sicht (Quelle: E/E-Architekturmodell)
+bn:Device   a owl:Class ; rdfs:label "Gerät"@de, "Device"@en .
+bn:Ecu      a owl:Class ; rdfs:subClassOf bn:Device ; rdfs:label "Steuergerät"@de, "ECU"@en .
+bn:Actuator a owl:Class ; rdfs:subClassOf bn:Device ; rdfs:label "Aktor"@de, "Actuator"@en .
+bn:Function a owl:Class ; rdfs:label "Funktion"@de, "Function"@en .
+bn:Signal   a owl:Class ; rdfs:label "Signal"@de, "Signal"@en .
+
+# Varianten-Sicht
+bn:Configuration a owl:Class ; rdfs:label "Fahrzeugkonfiguration"@de, "Vehicle configuration"@en .
+
+# ------------------------------------------------- Objekt-Properties
+bn:hasConnector    a owl:ObjectProperty ; rdfs:domain bn:Harness    ; rdfs:range bn:Connector .
+bn:hasContactPoint a owl:ObjectProperty ; rdfs:domain bn:Connector  ; rdfs:range bn:ContactPoint .
+bn:fromContact     a owl:ObjectProperty ; rdfs:domain bn:Connection ; rdfs:range bn:ContactPoint .
+bn:toContact       a owl:ObjectProperty ; rdfs:domain bn:Connection ; rdfs:range bn:ContactPoint .
+bn:realisedBy      a owl:ObjectProperty ; rdfs:domain bn:Connection ; rdfs:range bn:Wire .
+bn:carriesSignal   a owl:ObjectProperty ; rdfs:domain bn:Connection ; rdfs:range bn:Signal .
+bn:belongsToModule a owl:ObjectProperty ; rdfs:range bn:Module ;
+    rdfs:comment "Wire, Connection or Connector is part of a module (KBL: Controlled_components)."@en .
+bn:coreOf          a owl:ObjectProperty ; rdfs:domain bn:Wire       ; rdfs:range bn:Wire ;
+    rdfs:comment "Ader eines mehradrigen Kabels (KBL: Core_occurrence)."@de .
+bn:pluggedInto     a owl:ObjectProperty ; rdfs:domain bn:Connector  ; rdfs:range bn:Device .
+
+bn:allocatedTo     a owl:ObjectProperty ; rdfs:domain bn:Function   ; rdfs:range bn:Ecu .
+bn:usesSignal      a owl:ObjectProperty ; rdfs:domain bn:Function   ; rdfs:range bn:Signal .
+bn:requiresModule  a owl:ObjectProperty ; rdfs:domain bn:Function   ; rdfs:range bn:Module .
+bn:providedBy      a owl:ObjectProperty ; rdfs:domain bn:Signal     ; rdfs:range bn:Device .
+bn:consumedBy      a owl:ObjectProperty ; rdfs:domain bn:Signal     ; rdfs:range bn:Device .
+
+bn:includesModule  a owl:ObjectProperty ; rdfs:domain bn:Configuration ; rdfs:range bn:Module .
+
+# ---------------------------------------------------- Daten-Properties
+bn:crossSectionMm2         a owl:DatatypeProperty ; rdfs:domain bn:Wire   ; rdfs:range xsd:decimal .
+bn:lengthMm                a owl:DatatypeProperty ; rdfs:domain bn:Wire   ; rdfs:range xsd:integer .
+bn:colour                  a owl:DatatypeProperty ; rdfs:domain bn:Wire   ; rdfs:range xsd:string .
+bn:requiredCrossSectionMm2 a owl:DatatypeProperty ; rdfs:domain bn:Signal ; rdfs:range xsd:decimal .
+bn:signalName              a owl:DatatypeProperty ; rdfs:domain bn:Signal ; rdfs:range xsd:string .
+bn:partNumber              a owl:DatatypeProperty ; rdfs:range xsd:string .
+bn:optionCode              a owl:DatatypeProperty ; rdfs:domain bn:Module ; rdfs:range xsd:string ;
+    rdfs:comment "Ausstattungsregel des Moduls, z. B. PR-Nummern-Ausdruck (KBL: Logistic_control_information)."@de .
+# Herkunft (Provenance): aus welchem Quellsystem stammt eine Aussage?
+bn:sourceSystem            a owl:DatatypeProperty ; rdfs:range xsd:string .

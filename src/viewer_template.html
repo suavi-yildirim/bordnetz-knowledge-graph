@@ -1,0 +1,785 @@
+<!doctype html>
+<!-- Template for build/viewer.html; src/export_viewer.py replaces the DATA placeholder. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bordnetz Knowledge Graph</title>
+<meta name="description" content="KBL wire-harness data as a knowledge graph (RDF/OWL, SPARQL): interactive 3D view of a fictitious example and the public VW sample harness, in English and German.">
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #ffffff; --text: #18212c; --muted: #5a6573; --border: #dce1e7;
+    --accent: #c77700; --accent-soft: #fff3df; --danger: #c0392b; --code-bg: #f1f3f6;
+    /* 3D canvas: dark in both themes, so the lit spheres read well */
+    --canvas: #0d131a; --l0: #5b9bd5; --l1: #45b6ea; --l2: #2ecc9a; --l3: #a9b6c2; --l4: #e2e7ec;
+    --issue: #ff6b5b; --hl: #ffb020; --edge: #5d6b7a; --mini: #6f9cc4; --maxi: #c08bff; --connector: #b9c4cf;
+    /* geometry view: light, CAD-like scene */
+    --geo-bg: #e6e9ed; --geo-tube: #2b7da6; --geo-tube-maxi: #93c1d9; --geo-connector: #a35bd8;
+    --geo-terminal: #56606b; --geo-fixing: #e3b23c; --geo-box: #6c7681; --geo-hl: #ff7a00; --geo-suspect: #e03b2f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1016; --surface: #131b24; --text: #e4e9ef; --muted: #98a3b0; --border: #263241;
+      --accent: #ffb020; --accent-soft: #2a2110; --danger: #ff6b5b; --code-bg: #0e151d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1016; --surface: #131b24; --text: #e4e9ef; --muted: #98a3b0; --border: #263241;
+    --accent: #ffb020; --accent-soft: #2a2110; --danger: #ff6b5b; --code-bg: #0e151d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { display: flex; flex-direction: column; height: 100vh; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 16px;
+           border-bottom: 1px solid var(--border); background: var(--surface); }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .01em; }
+  header p { margin: 0; color: var(--muted); font-size: 12.5px; flex: 1 1 260px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; color: var(--text); padding: 7px 12px; font: inherit; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; font-weight: 600; }
+  label.toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+  main { flex: 1; display: grid; grid-template-columns: 1fr 370px; min-height: 0; }
+  #graph { position: relative; min-width: 0; min-height: 0; background: var(--canvas); overflow: hidden; }
+  #fg, #geo { position: absolute; inset: 0; }
+  #geo { background: var(--geo-bg); }
+  #geo .labels { position: absolute; inset: 0; pointer-events: none; }
+  .glabel { font: 600 11px system-ui, sans-serif; color: #2a1640; background: rgba(255,255,255,.85);
+            padding: 1px 5px; border-radius: 4px; white-space: nowrap; transform: translateY(-14px); }
+  #tip { position: absolute; z-index: 5; pointer-events: none; background: rgba(20,26,34,.92); color: #f1f4f7;
+         font-size: 12px; padding: 5px 8px; border-radius: 6px; max-width: 280px; }
+  #hint { position: absolute; left: 12px; bottom: 10px; color: #8d99a6; font-size: 12px; pointer-events: none; }
+  aside { overflow-y: auto; border-left: 1px solid var(--border); background: var(--surface); padding: 14px 16px 24px; }
+  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 8px; }
+  aside h2:first-child { margin-top: 0; }
+  .stats { color: var(--muted); font-size: 12.5px; }
+  .scen { display: grid; gap: 6px; }
+  .scen button, .modlist button, .reset { text-align: left; border: 1px solid var(--border); background: var(--bg);
+           color: var(--text); border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; }
+  .scen button:hover, .modlist button:hover { border-color: var(--accent); }
+  .scen button[aria-pressed="true"], .modlist button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .reset { margin-top: 8px; padding: 6px 10px; font-size: 13px; }
+  .card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg); }
+  .card:empty { display: none; }
+  .card h3 { margin: 0 0 4px; font-size: 14px; }
+  .card .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 6px; overflow-wrap: anywhere; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 11.5px;
+        overflow-x: auto; white-space: pre; margin: 6px 0 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  td { padding: 3px 4px; border-top: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+  td.p { color: var(--muted); white-space: nowrap; }
+  .modlist { display: grid; gap: 5px; max-height: 240px; overflow-y: auto; padding-right: 2px; }
+  .modlist button { padding: 6px 8px; font-size: 12.5px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+  .modlist code { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+  select, input[type="search"] { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px;
+           background: var(--bg); color: var(--text); font: inherit; }
+  .legend { display: grid; gap: 4px; font-size: 12.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex: none; }
+  .bar { width: 18px; height: 4px; border-radius: 2px; display: inline-block; flex: none; }
+  .foot { color: var(--muted); font-size: 11.5px; margin-top: 18px; }
+  .foot a { color: var(--accent); }
+  .hidden { display: none !important; }
+  @media (max-width: 820px) {
+    body { height: auto; }
+    main { grid-template-columns: 1fr; }
+    #graph { height: 62vh; }
+    aside { border-left: 0; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 data-i18n="title">Bordnetz Knowledge Graph</h1>
+  <p data-i18n="subtitle"></p>
+  <div class="seg" role="group" aria-label="Dataset">
+    <button id="btn-demo" aria-pressed="true" data-i18n="btnDemo"></button>
+    <button id="btn-real" aria-pressed="false" data-i18n="btnReal"></button>
+    <button id="btn-geo" aria-pressed="false" data-i18n="btnGeo"></button>
+  </div>
+  <label class="toggle"><input type="checkbox" id="labels" checked> <span data-i18n="labels"></span></label>
+  <div class="seg" id="lang" role="group" aria-label="Sprache / Language">
+    <button data-lang="de" aria-pressed="false">DE</button><button data-lang="en" aria-pressed="false">EN</button>
+  </div>
+</header>
+<main>
+  <div id="graph"><div id="fg"></div><div id="geo" class="hidden"></div><div id="tip" class="hidden"></div><div id="hint" data-i18n="hint"></div></div>
+  <aside>
+    <h2 data-i18n="hDataset"></h2>
+    <div class="stats" id="stats"></div>
+
+    <h2 data-i18n="hScen"></h2>
+    <div class="scen" id="scenarios"></div>
+    <div class="card" id="scen-text" style="margin-top:8px"></div>
+    <button class="reset" id="reset" data-i18n="reset"></button>
+
+    <div id="real-controls" class="hidden">
+      <h2 data-i18n="hVariant"></h2>
+      <select id="config" aria-label="Configuration">
+        <option value="all" data-i18n="optAll"></option>
+        <option value="Kombination_MINI" data-i18n="optMini"></option>
+      </select>
+      <h2 data-i18n="hSearch"></h2>
+      <input type="search" id="search" list="search-list" data-i18n-ph="searchPh">
+      <datalist id="search-list"></datalist>
+      <h2 data-i18n="hModules"></h2>
+      <div class="modlist" id="modules"></div>
+    </div>
+
+    <h2>Details</h2>
+    <div class="card" id="details"></div>
+
+    <h2 data-i18n="hLegend"></h2>
+    <div class="legend" id="legend"></div>
+
+    <p class="foot" data-i18n-html="foot"></p>
+  </aside>
+</main>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import ForceGraph3D from "https://cdn.jsdelivr.net/npm/3d-force-graph@1.77.0/+esm";
+let SpriteText = null;  // optional: text labels in 3D; the viewer works without them
+try { SpriteText = (await import("https://cdn.jsdelivr.net/npm/three-spritetext@1.9.3/+esm")).default; } catch (e) {}
+
+const DATA = /*DATA*/null;
+
+// ------------------------------------------------------------ language (DE / EN)
+const REPO = "https://github.com/suavi-yildirim/bordnetz-knowledge-graph";
+const I18N = {
+  de: {
+    title: "Bordnetz Knowledge Graph",
+    subtitle: "KBL-Leitungssatzdaten und E/E-Modell als semantischer Graph (RDF/OWL, SPARQL). Ziehen = drehen, Scrollen = zoomen, Klick = Details.",
+    btnDemo: "Fiktives Beispiel", btnReal: "VW Old Beetle (echte KBL)", btnGeo: "VW Geometrie (Verlegung)", labels: "Beschriftung",
+    hint: "Ziehen: drehen · Rechtsklick ziehen: verschieben · Scrollen: zoomen",
+    hDataset: "Datensatz", hScen: "Szenarien (SPARQL-Fragen)", reset: "Ansicht zurücksetzen", hVariant: "Variante",
+    optAll: "Alle Verbindungen", optMini: "Nur Konfiguration MINI", hSearch: "Suche", searchPh: "Stecker oder Signal, z. B. B298",
+    hModules: "Module (Ausstattungscode · Verbindungen)", hLegend: "Legende",
+    foot: `Fiktives Beispiel: erfundene Daten. Echte KBL: Volkswagen VOBES »Old Beetle«, prostep ivip ECAD-Wiki, CC BY-SA 4.0.
+           Nur erfundene und öffentlich verfügbare Daten. Code: <a href="${REPO}">GitHub</a>.`,
+    pick: "Knoten oder Kante anklicken.", loading: "Lade 3D-Geometrie …",
+    connections: "Verbindungen", Connections: "Verbindungen", Signals: "Signale", Modules: "Module", Wire: "Leitung",
+    Variant: "Variante", fromTo: "Von – nach", both: "MINI und MAXI", onlyMaxi: "nur MAXI", noSignal: "(ohne Signal)",
+    Connection: "Verbindung", Connector: "Stecker", Module: "Modul", optionCode: "Ausstattungscode",
+    Configurations: "Konfigurationen", none: "keine", sparql: "SPARQL-Abfrage dahinter", checkBehind: "Prüfung dahinter",
+    triplesAround: (n) => `${n} Tripel um diesen Knoten (→ ausgehend, ← eingehend)`,
+    signalCount: (n) => `Signal · ${n} Verbindungen`, signalRoute: (n) => `Signal · ${n} Verbindungen, hervorgehoben: ihr Weg`,
+    nothing: (v) => `Nichts gefunden für »${v}«.`,
+    section: "Leitungsstrang-Abschnitt", sectionShort: "Abschnitt", bundle: "Leitungsstrang",
+    deviates: (mm) => `Geometrie weicht ${mm} mm ab`, misses: (mm) => `Mittellinie verfehlt die Knoten um ${mm} mm`,
+    terminalTip: "Sonderkontakt (z. B. Masse- oder Ringkabelschuh)", terminal: "Sonderkontakt", fixing: "Clip / Befestigung",
+    box: "Komponentenbox", wholeRoute: "(hervorgehoben: ihr ganzer Weg)", check: "Prüfung",
+    position: "Position aus der KBL-Geometrie",
+    suspectTitle: "Abweichende Geometrie",
+    suspectText: (n, mm) => `${n} Leitungsstrang-Abschnitte: Ihre Mittellinie verfehlt Start- oder Endknoten um ${mm} mm. ` +
+      "Topologie und Geometrie der KBL passen dort nicht zusammen; dargestellt als gerade Linie (rot).",
+    suspectCheck: "src/kbl_geometry.py: Mittellinie als B-Spline (Grad 6, uniforme Knoten) auswerten;\n" +
+      "Abschnitt auffällig, wenn ein Kurvenende weiter als 5 mm vom Start- oder Endknoten entfernt ist.",
+    legIssue: "von den Konsistenzprüfungen gefunden", legFlow: "hervorgehoben (mit Signalfluss)",
+    legConnSize: "Stecker (Größe = Anzahl Verbindungen)", legBoth: "Verbindung in MINI und MAXI",
+    legMaxi: "Verbindung nur in MAXI", legThick: "Dicke = Leitungsquerschnitt",
+    legTubeBoth: "Leitungsstrang, in MINI und MAXI", legTubeMaxi: "Leitungsstrang nur in MAXI",
+    legSuspect: "Geometrie weicht von der Topologie ab", legClip: "Clip", legBox: "Komponentenbox (Relais, Sicherungen)",
+    legRoute: "hervorgehoben: Weg der Verbindungen",
+  },
+  en: {
+    title: "Wire Harness Knowledge Graph",
+    subtitle: "KBL wire-harness data and an E/E model as a semantic graph (RDF/OWL, SPARQL). Drag = rotate, scroll = zoom, click = details.",
+    btnDemo: "Fictitious example", btnReal: "VW Old Beetle (real KBL)", btnGeo: "VW geometry (routing)", labels: "Labels",
+    hint: "Drag: rotate · right-drag: pan · scroll: zoom",
+    hDataset: "Dataset", hScen: "Scenarios (SPARQL questions)", reset: "Reset view", hVariant: "Variant",
+    optAll: "All connections", optMini: "Configuration MINI only", hSearch: "Search", searchPh: "Connector or signal, e.g. B298",
+    hModules: "Modules (option code · connections)", hLegend: "Legend",
+    foot: `Fictitious example: invented data. Real KBL: Volkswagen VOBES “Old Beetle”, prostep ivip ECAD wiki, CC BY-SA 4.0.
+           Only invented and publicly available data. Code: <a href="${REPO}">GitHub</a>.`,
+    pick: "Click a node or an edge.", loading: "Loading 3D geometry …",
+    connections: "connections", Connections: "Connections", Signals: "Signals", Modules: "Modules", Wire: "Wire",
+    Variant: "Variant", fromTo: "From – to", both: "MINI and MAXI", onlyMaxi: "MAXI only", noSignal: "(no signal)",
+    Connection: "Connection", Connector: "Connector", Module: "Module", optionCode: "Option code",
+    Configurations: "Configurations", none: "none", sparql: "SPARQL query behind it", checkBehind: "Check behind it",
+    triplesAround: (n) => `${n} triples around this node (→ outgoing, ← incoming)`,
+    signalCount: (n) => `Signal · ${n} connections`, signalRoute: (n) => `Signal · ${n} connections, highlighted: their route`,
+    nothing: (v) => `Nothing found for “${v}”.`,
+    section: "Bundle section", sectionShort: "Section", bundle: "Bundle",
+    deviates: (mm) => `Geometry deviates by ${mm} mm`, misses: (mm) => `Centre line misses the nodes by ${mm} mm`,
+    terminalTip: "Special contact (e.g. ground point or ring terminal)", terminal: "Special contact", fixing: "Clip / fixing",
+    box: "Component box", wholeRoute: "(highlighted: their whole route)", check: "Check",
+    position: "Position from the KBL geometry",
+    suspectTitle: "Deviating geometry",
+    suspectText: (n, mm) => `${n} bundle sections: their centre line misses the start or end node by ${mm} mm. ` +
+      "The topology and the geometry in the KBL do not match there; drawn as a straight line (red).",
+    suspectCheck: "src/kbl_geometry.py: evaluate the centre line as a B-spline (degree 6, uniform knots);\n" +
+      "a section is flagged if a curve end lies more than 5 mm from its start or end node.",
+    legIssue: "found by the consistency checks", legFlow: "highlighted (with signal flow)",
+    legConnSize: "Connector (size = number of connections)", legBoth: "Connection in MINI and MAXI",
+    legMaxi: "Connection only in MAXI", legThick: "Thickness = wire cross-section",
+    legTubeBoth: "Bundle, in MINI and MAXI", legTubeMaxi: "Bundle only in MAXI",
+    legSuspect: "Geometry does not match the topology", legClip: "Clip", legBox: "Component box (relays, fuses)",
+    legRoute: "highlighted: route of the connections",
+  },
+};
+let lang = (() => {
+  try { const saved = localStorage.getItem("lang"); if (saved === "de" || saved === "en") return saved; } catch (e) {}
+  return (navigator.language || "").toLowerCase().startsWith("de") ? "de" : "en";
+})();
+let T = I18N[lang];
+const L = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x[lang] : x);  // {de, en} -> current language
+const layerNames = () => L(DATA.demo.layers);
+const PICK = () => `<div class="sub">${T.pick}</div>`;
+function applyStatic() {
+  document.documentElement.lang = lang;
+  document.title = T.title;
+  document.querySelectorAll("[data-i18n]").forEach((e) => { e.textContent = T[e.dataset.i18n]; });
+  document.querySelectorAll("[data-i18n-html]").forEach((e) => { e.innerHTML = T[e.dataset.i18nHtml]; });
+  document.querySelectorAll("[data-i18n-ph]").forEach((e) => { e.placeholder = T[e.dataset.i18nPh]; });
+  document.querySelectorAll("#lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+}
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = Object.fromEntries(["canvas", "l0", "l1", "l2", "l3", "l4", "issue", "hl", "edge", "mini", "maxi", "connector"]
+  .map((k) => [k, cssVar("--" + k)]));
+const rgba = (hex, a) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+};
+
+const el = $("#fg");
+let graph = null, mode = "demo", cfg = "all", showLabels = true;
+let hl = { nodes: new Set(), links: new Set(), active: false };
+
+// ------------------------------------------------------------ styling
+function baseNodeColor(n) {
+  if (mode === "demo") return n.issue ? C.issue : C["l" + n.layer];
+  return C.connector;
+}
+function nodeColor(n) {
+  const base = hl.active && hl.nodes.has(n.id) && mode === "real" ? C.hl : baseNodeColor(n);
+  if (hl.active && !hl.nodes.has(n.id)) return rgba(baseNodeColor(n), 0.12);
+  if (mode === "real" && cfg !== "all" && !n.inMini) return rgba(base, 0.12);
+  return base;
+}
+function linkColor(l) {
+  if (hl.active) return hl.links.has(l) ? C.hl : rgba(C.edge, 0.08);
+  if (mode === "demo") return C.edge;
+  if (cfg !== "all" && !l.inMini) return rgba(C.maxi, 0.05);
+  return l.inMini ? C.mini : C.maxi;
+}
+function linkWidth(l) {
+  const w = mode === "demo" ? 0.5 : 0.2 + (l.mm2 || 0.35) * 0.3;
+  return hl.active && hl.links.has(l) ? w + 0.8 : w;
+}
+function labelObject(n) {
+  if (!SpriteText || !showLabels) return null;
+  const important = mode === "demo" || n.degree >= 9 || (hl.active && hl.nodes.has(n.id));
+  if (!important) return null;
+  const s = new SpriteText(mode === "demo" ? n.id : n.label);
+  s.color = hl.active && !hl.nodes.has(n.id) ? "rgba(220,228,236,0.18)" : (n.issue ? C.issue : "#dfe6ee");
+  s.textHeight = mode === "demo" ? 4.2 : 3.4;
+  s.fontWeight = "600";
+  s.position.y = mode === "demo" ? 6 : 5 + Math.sqrt(n.degree || 1);
+  return s;
+}
+function refresh() {
+  if (!graph) return;
+  graph.nodeColor(graph.nodeColor()).linkColor(graph.linkColor()).linkWidth(graph.linkWidth())
+       .linkDirectionalParticles(graph.linkDirectionalParticles()).nodeThreeObject(graph.nodeThreeObject());
+}
+
+// ------------------------------------------------------------ graph
+function tooltip(n) {
+  if (mode === "demo") return `<b>${esc(n.id)}</b><br>${esc(layerNames()[n.layer])}: ${esc(n.title)}`;
+  return `<b>${esc(n.label)}</b><br>${esc(n.desc)}<br>${n.degree} ${T.connections}`;
+}
+// weak pull towards the centre line, so separate parts of the graph do not drift away
+function pull(k) {
+  let nodes = [];
+  const force = (alpha) => nodes.forEach((n) => {
+    n.vy -= n.y * k * alpha; n.vz -= n.z * k * alpha;
+    if (n.fx === undefined) n.vx -= n.x * k * alpha;
+  });
+  force.initialize = (ns) => { nodes = ns; };
+  return force;
+}
+// One 3D scene for the whole page; switching the dataset only swaps the data
+// (destroying and re-creating the scene leaves the old animation loop running).
+let fitted = false;
+function initGraph() {
+  graph = new ForceGraph3D(el, { controlType: "orbit" })
+    .width(el.clientWidth).height(el.clientHeight)
+    .backgroundColor(C.canvas).showNavInfo(false).nodeId("id")
+    .graphData({ nodes: [], links: [] })  // the first frame can come before loadData()
+    .nodeLabel(tooltip).nodeColor(nodeColor).nodeOpacity(0.95).nodeResolution(20)
+    .nodeVal((n) => (mode === "demo" ? 3 : 0.6 + n.degree * 0.35))
+    .nodeThreeObjectExtend(true).nodeThreeObject(labelObject)
+    .linkColor(linkColor).linkWidth(linkWidth).linkOpacity(0.85).linkCurvature((l) => l.curve || 0)
+    .linkLabel((l) => (mode === "demo" ? esc(l.kind) : `<b>${esc(l.signal)}</b><br>${T.Wire} ${esc(l.wire)} · ${l.mm2 ?? "?"} mm²`))
+    .linkDirectionalParticles((l) => (hl.active && hl.links.has(l) ? 3 : 0))
+    .linkDirectionalParticleWidth(1.6).linkDirectionalParticleSpeed(0.008).linkDirectionalParticleColor(() => C.hl)
+    .onNodeClick((n) => { selectNode(n); focus(n); })
+    .onLinkClick((l) => selectLink(l))
+    .onBackgroundClick(() => reset())
+    .cooldownTicks(60)
+    .onEngineStop(() => { if (!fitted) { fitted = true; graph.zoomToFit(400, 30); } });  // once, on the finished layout
+}
+function loadData() {
+  const d = structuredClone(DATA[mode]);
+  fitted = false;
+  if (mode === "demo") {
+    d.nodes.forEach((n) => { n.fx = (n.layer - 2) * 90; });  // the five layers as planes in space
+  } else {
+    const mini = new Set();
+    d.links.forEach((l) => { if (l.inMini) { mini.add(l.source); mini.add(l.target); } });
+    d.nodes.forEach((n) => { n.inMini = mini.has(n.id); });
+    const pairs = {};  // several connections between the same two connectors: bend them apart
+    d.links.forEach((l) => {
+      const k = [l.source, l.target].sort().join("|");
+      const i = (pairs[k] = (pairs[k] ?? -1) + 1);
+      l.curve = i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.18;
+    });
+  }
+  // lay out before the first frame, so the graph appears finished
+  graph.nodeRelSize(mode === "demo" ? 3.2 : 2.6).warmupTicks(mode === "demo" ? 150 : 300);
+  graph.d3Force("charge").strength(mode === "demo" ? -130 : -30);
+  graph.d3Force("pull", pull(mode === "demo" ? 0.05 : 0.03));
+  graph.graphData(d);
+  refresh();
+}
+function focus(n) {
+  const dist = mode === "demo" ? 120 : 140;
+  const r = 1 + dist / (Math.hypot(n.x, n.y, n.z) || 1);
+  graph.cameraPosition({ x: n.x * r, y: n.y * r, z: n.z * r }, n, 1100);
+}
+function highlight(nodeIds, linkPred) {
+  const { nodes, links } = graph.graphData();
+  hl = { nodes: new Set(nodeIds), links: new Set(), active: true };
+  links.forEach((l) => {
+    if (linkPred(l)) { hl.links.add(l); hl.nodes.add(l.source.id); hl.nodes.add(l.target.id); }
+  });
+  refresh();
+  fitTo(nodes.filter((n) => hl.nodes.has(n.id)), 900);
+  return nodes;
+}
+// zoomToFit always aims at the centre of the whole graph; this aims at the selection
+function fitTo(sel, ms) {
+  if (!sel.length) return;
+  const c = ["x", "y", "z"].map((k) => sel.reduce((s, n) => s + n[k], 0) / sel.length);
+  const r = Math.max(25, ...sel.map((n) => Math.hypot(n.x - c[0], n.y - c[1], n.z - c[2])));
+  const cam = graph.cameraPosition(), look = cam.lookAt || { x: 0, y: 0, z: 0 };
+  const dir = [cam.x - look.x, cam.y - look.y, cam.z - look.z];
+  const len = Math.hypot(...dir) || 1;
+  const dist = (r * 1.25) / Math.sin(((graph.camera().fov || 40) * Math.PI) / 360);
+  graph.cameraPosition({ x: c[0] + (dir[0] / len) * dist, y: c[1] + (dir[1] / len) * dist, z: c[2] + (dir[2] / len) * dist },
+                       { x: c[0], y: c[1], z: c[2] }, ms);
+}
+function press(btn) {
+  document.querySelectorAll("[aria-pressed].on").forEach((b) => { b.setAttribute("aria-pressed", "false"); b.classList.remove("on"); });
+  btn.setAttribute("aria-pressed", "true"); btn.classList.add("on");
+}
+
+// ------------------------------------------------------------ details
+function selectNode(n) {
+  const neighbours = new Set([n.id]);
+  highlight([n.id], (l) => l.source.id === n.id || l.target.id === n.id);
+  if (mode === "demo") {
+    const rows = n.triples.map(([dir, p, o]) => `<tr><td class="p">${dir} ${esc(p)}</td><td>${esc(o)}</td></tr>`).join("");
+    $("#details").innerHTML = `<h3>${esc(n.id)}</h3><div class="sub">${esc(layerNames()[n.layer])} · ${esc(n.title)}</div>
+      <table>${rows}</table><div class="sub" style="margin-top:6px">${T.triplesAround(n.triples.length)}</div>`;
+    return;
+  }
+  const inc = [...hl.links];
+  const sigs = [...new Set(inc.map((l) => l.signal))].sort();
+  const mods = [...new Set(inc.flatMap((l) => l.modules))];
+  const codes = DATA.real.modules.filter((m) => mods.includes(m.id)).map((m) => m.code);
+  $("#details").innerHTML = `<h3>${esc(n.label)}</h3><div class="sub">${T.Connector} · ${esc(n.desc)}</div>
+    <table><tr><td class="p">${T.Connections}</td><td>${inc.length}</td></tr>
+    <tr><td class="p">${T.Signals}</td><td>${sigs.map(esc).join("<br>")}</td></tr>
+    <tr><td class="p">${T.Modules}</td><td>${codes.map(esc).join("<br>")}</td></tr></table>`;
+}
+function selectLink(l) {
+  highlight([], (x) => x === l);
+  if (mode === "demo") {
+    $("#details").innerHTML = `<h3>${esc(l.source.id)} – ${esc(l.target.id)}</h3><div class="sub">${esc(l.kind)}</div>`;
+    return;
+  }
+  const mods = DATA.real.modules.filter((m) => l.modules.includes(m.id));
+  $("#details").innerHTML = `<h3>${esc(l.signal || T.noSignal)}</h3><div class="sub">${T.Connection} ${esc(l.label)}</div>
+    <table><tr><td class="p">${T.fromTo}</td><td>${esc(l.source.label)} → ${esc(l.target.label)}</td></tr>
+    <tr><td class="p">${T.Wire}</td><td>${esc(l.wire)} · ${l.mm2 ?? "?"} mm² · ${l.length ?? "?"} mm</td></tr>
+    <tr><td class="p">${T.Modules}</td><td>${mods.map((m) => esc(m.code)).join("<br>")}</td></tr>
+    <tr><td class="p">${T.Variant}</td><td>${l.inMini ? T.both : T.onlyMaxi}</td></tr></table>`;
+}
+
+// ------------------------------------------------------------ geometry view (Three.js)
+// The harness as routed in the car: KBL segments as tubes along their B-spline centre lines
+// (src/kbl_geometry.py), connectors as boxes, special terminals as small spheres,
+// clips (yellow) and component boxes (grey).  Loaded on first use only.
+const G = Object.fromEntries(["geo-bg", "geo-tube", "geo-tube-maxi", "geo-connector", "geo-terminal", "geo-fixing",
+  "geo-box", "geo-hl", "geo-suspect"].map((k) => [k.slice(4), cssVar("--" + k)]));
+const conns = new Map(DATA.real.all.map((c) => [c.id, c]));
+let geo = null, geoHL = { segs: new Set(), items: new Set() };
+
+async function geoInit() {
+  const THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const { CSS2DRenderer, CSS2DObject } = await import("three/addons/renderers/CSS2DRenderer.js");
+  const box = $("#geo");
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  box.append(renderer.domElement);
+  const labels = new CSS2DRenderer();
+  labels.domElement.className = "labels";
+  box.append(labels.domElement);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(G.bg);
+  const camera = new THREE.PerspectiveCamera(40, 1, 5, 60000);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa5b1, 1.5));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+  sun.position.set(800, 2500, 1500);
+  scene.add(sun);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  const segs = [], items = [];
+  for (const s of DATA.geo.segments) {
+    const curve = new THREE.CatmullRomCurve3(s.pts.map((p) => new THREE.Vector3(...p)));
+    const tube = new THREE.TubeGeometry(curve, Math.max(6, s.pts.length * 3), Math.max(2.5, s.r * 1.2), 10, false);
+    const mesh = new THREE.Mesh(tube, new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, transparent: true }));
+    mesh.userData = { kind: "segment", s, inMini: s.connections.some((id) => conns.get(id)?.inMini) };
+    scene.add(mesh);
+    segs.push(mesh);
+  }
+  const shapes = { connector: new THREE.BoxGeometry(24, 15, 15), terminal: new THREE.SphereGeometry(5, 12, 8),
+                   fixing: new THREE.SphereGeometry(7, 14, 10), box: new THREE.BoxGeometry(50, 32, 32) };
+  const add = (kind, item) => {
+    const mesh = new THREE.Mesh(shapes[kind], new THREE.MeshStandardMaterial({ roughness: 0.6, transparent: true }));
+    mesh.position.set(...item.p);
+    mesh.userData = { kind, item };
+    if (kind === "connector") {
+      const div = document.createElement("div");
+      div.className = "glabel";
+      div.textContent = item.label;
+      const label = new CSS2DObject(div);
+      label.visible = false;
+      mesh.add(label);
+      mesh.userData.label = label;
+    }
+    scene.add(mesh);
+    items.push(mesh);
+  };
+  DATA.geo.placed.forEach((x) => add(x.kind, x));
+  DATA.geo.fixings.forEach((x) => add("fixing", x));
+  DATA.geo.boxes.forEach((x) => add("box", x));
+
+  geo = { THREE, renderer, labels, scene, camera, controls, segs, items, anim: null, raf: null,
+          ray: new THREE.Raycaster(), mouse: new THREE.Vector2() };
+  geoResize();
+  geoStyle();
+  geoFit(segs, 0, new THREE.Vector3(0.9, 0.7, 1.1));
+
+  const dom = renderer.domElement;
+  dom.addEventListener("pointermove", (e) => { const hit = geoPick(e); showTip(e, hit); dom.style.cursor = hit ? "pointer" : ""; });
+  dom.addEventListener("pointerleave", () => $("#tip").classList.add("hidden"));
+  let down = null;
+  dom.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY]; });
+  dom.addEventListener("pointerup", (e) => {  // a click, not the end of a rotation
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
+    const hit = geoPick(e);
+    if (hit) geoSelect(hit); else reset();
+  });
+}
+function geoLoop() {
+  if (mode !== "geo") { geo.raf = null; return; }
+  const a = geo.anim;
+  if (a) {
+    const t = Math.min(1, (performance.now() - a.start) / a.ms), k = t * t * (3 - 2 * t);
+    geo.camera.position.lerpVectors(a.p0, a.p1, k);
+    geo.controls.target.lerpVectors(a.t0, a.t1, k);
+    if (t === 1) geo.anim = null;
+  }
+  geo.controls.update();
+  geo.renderer.render(geo.scene, geo.camera);
+  geo.labels.render(geo.scene, geo.camera);
+  geo.raf = requestAnimationFrame(geoLoop);
+}
+function geoResize() {
+  if (!geo) return;
+  const box = $("#geo"), w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  geo.renderer.setSize(w, h);
+  geo.labels.setSize(w, h);
+  geo.camera.aspect = w / h;
+  geo.camera.updateProjectionMatrix();
+}
+function geoFit(objs, ms, dir) {
+  if (!geo || !objs.length) return;
+  const { THREE, camera, controls } = geo;
+  const box = new THREE.Box3();
+  objs.forEach((o) => box.expandByObject(o));
+  const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()).length();
+  const d = dir ? dir.clone() : camera.position.clone().sub(controls.target);
+  if (d.lengthSq() === 0) d.set(0.9, 0.7, 1.1);
+  const dist = Math.max(250, (size * 0.45) / Math.tan((camera.fov * Math.PI) / 360));
+  const to = c.clone().add(d.normalize().multiplyScalar(dist));
+  if (!ms) { camera.position.copy(to); controls.target.copy(c); controls.update(); return; }
+  geo.anim = { p0: camera.position.clone(), t0: controls.target.clone(), p1: to, t1: c, start: performance.now(), ms };
+}
+function geoStyle() {
+  if (!geo) return;
+  for (const m of geo.segs) {
+    const { s, inMini } = m.userData;
+    const lit = hl.active && geoHL.segs.has(s.id);
+    const faded = hl.active ? !lit : cfg !== "all" && !inMini;
+    m.material.color.set(lit ? G.hl : s.suspect ? G.suspect : inMini ? G.tube : G["tube-maxi"]);
+    m.material.opacity = faded ? 0.1 : 1;
+    m.material.depthWrite = !faded;
+  }
+  for (const m of geo.items) {
+    const { kind, item, label } = m.userData;
+    const lit = hl.active && geoHL.items.has(item.id);
+    m.material.color.set(lit ? G.hl : G[kind]);
+    m.material.opacity = hl.active && !lit ? 0.15 : 1;
+    if (label) label.visible = showLabels && lit;
+  }
+}
+function geoHighlight(connIds, extraSegs = [], extraItems = []) {
+  if (!geo) return;
+  const ids = new Set(connIds);
+  geoHL = { segs: new Set(extraSegs), items: new Set(extraItems) };
+  for (const m of geo.segs) if (m.userData.s.connections.some((c) => ids.has(c))) geoHL.segs.add(m.userData.s.id);
+  ids.forEach((c) => {
+    const x = conns.get(c);
+    if (x?.source) geoHL.items.add(x.source);
+    if (x?.target) geoHL.items.add(x.target);
+  });
+  hl.active = true;
+  geoStyle();
+  geoFit([...geo.segs.filter((m) => geoHL.segs.has(m.userData.s.id)),
+          ...geo.items.filter((m) => geoHL.items.has(m.userData.item.id))], 900);
+}
+function geoPick(e) {
+  const rect = geo.renderer.domElement.getBoundingClientRect();
+  geo.mouse.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  geo.ray.setFromCamera(geo.mouse, geo.camera);
+  const hit = geo.ray.intersectObjects([...geo.items, ...geo.segs], false).find((h) => h.object.material.opacity > 0.3);
+  return hit ? hit.object : null;
+}
+function showTip(e, obj) {
+  const tip = $("#tip");
+  if (!obj) { tip.classList.add("hidden"); return; }
+  const { kind, s, item } = obj.userData;
+  tip.innerHTML = kind === "segment"
+    ? `<b>${T.section}</b><br>${s.connections.length} ${T.connections} · Ø ${(2 * s.r).toFixed(1)} mm · ${s.length} mm` +
+      (s.suspect ? `<br>${T.deviates(s.suspect)}` : "")
+    : kind === "connector" ? `<b>${esc(item.label)}</b><br>${T.Connector}`
+    : kind === "terminal" ? `<b>${esc(item.label)}</b><br>${T.terminalTip}`
+    : kind === "fixing" ? `<b>${esc(item.label)}</b><br>${T.fixing}`
+    : `<b>${esc(item.desc)}</b><br>${T.box} ${esc(item.label)}`;
+  const r = $("#graph").getBoundingClientRect();
+  tip.style.left = `${e.clientX - r.left + 14}px`;
+  tip.style.top = `${e.clientY - r.top + 12}px`;
+  tip.classList.remove("hidden");
+}
+function geoSelect(obj) {
+  const { kind, s, item } = obj.userData;
+  if (kind === "segment") {
+    geoHighlight(s.connections, [s.id]);
+    const sigs = [...new Set(s.connections.map((c) => conns.get(c)?.signal).filter(Boolean))].sort();
+    $("#details").innerHTML = `<h3>${T.sectionShort} ${esc(s.id.replace("Segment_", ""))}</h3>
+      <div class="sub">${T.bundle} · ${s.length} mm · Ø ${(2 * s.r).toFixed(1)} mm</div>
+      <table><tr><td class="p">${T.Connections}</td><td>${s.connections.length} ${T.wholeRoute}</td></tr>
+      <tr><td class="p">${T.Signals}</td><td>${sigs.slice(0, 14).map(esc).join("<br>")}${sigs.length > 14 ? `<br>… +${sigs.length - 14}` : ""}</td></tr>
+      ${s.suspect ? `<tr><td class="p">${T.check}</td><td>${T.misses(s.suspect)}</td></tr>` : ""}</table>`;
+  } else if (kind === "connector" || kind === "terminal") {
+    const cs = [...conns.values()].filter((c) => c.source === item.id || c.target === item.id);
+    geoHighlight(cs.map((c) => c.id), [], [item.id]);
+    const sigs = [...new Set(cs.map((c) => c.signal))].sort();
+    const codes = DATA.real.modules.filter((m) => cs.some((c) => c.modules.includes(m.id))).map((m) => m.code);
+    $("#details").innerHTML = `<h3>${esc(item.label)}</h3>
+      <div class="sub">${kind === "connector" ? T.Connector : T.terminal} · ${T.position}</div>
+      <table><tr><td class="p">${T.Connections}</td><td>${cs.length}</td></tr>
+      <tr><td class="p">${T.Signals}</td><td>${sigs.map(esc).join("<br>") || "–"}</td></tr>
+      <tr><td class="p">${T.Modules}</td><td>${codes.map(esc).join("<br>") || "–"}</td></tr></table>`;
+  } else {
+    $("#details").innerHTML = `<h3>${esc(item.desc || item.label)}</h3>
+      <div class="sub">${kind === "fixing" ? T.fixing : T.box} · ${esc(item.label)}</div>`;
+  }
+}
+function geoSuspectScenario() {
+  const list = DATA.geo.suspect;
+  return { title: T.suspectTitle,
+           text: T.suspectText(list.length, list.map((x) => x.miss_mm).sort((a, b) => a - b).join(", ")),
+           segs: list.map((x) => x.id), check: T.suspectCheck };
+}
+
+// ------------------------------------------------------------ sidebar
+function scenarioCard(s) {
+  $("#scen-text").innerHTML = `<h3>${esc(L(s.title))}</h3><div>${esc(L(s.text))}</div>` + (s.query
+    ? `<details><summary>${T.sparql}</summary><pre>${esc(s.query)}</pre></details>`
+    : `<details><summary>${T.checkBehind}</summary><pre>${esc(s.check)}</pre></details>`);
+}
+function connectionsOf(pred) {
+  return DATA.real.all.filter(pred).map((c) => c.id);
+}
+let activeScenario = null;  // index of the pressed scenario, so a language switch can show it again
+function currentData() {
+  return mode === "geo"
+    ? { ...DATA.real, stats: DATA.geo.stats, scenarios: [...DATA.real.scenarios, geoSuspectScenario()] }
+    : DATA[mode];
+}
+function buildSidebar() {
+  const D = currentData();
+  $("#stats").textContent = L(D.stats);
+  $("#scenarios").innerHTML = "";
+  D.scenarios.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.textContent = L(s.title);
+    b.setAttribute("aria-pressed", "false");
+    b.onclick = () => {
+      press(b);
+      activeScenario = i;
+      if (mode === "demo") {
+        const ids = new Set(s.nodes);
+        highlight(s.nodes, (l) => ids.has(l.source.id) && ids.has(l.target.id));
+      } else if (mode === "geo") {
+        geoHighlight(s.links || [], s.segs || [], s.nodes || []);
+      } else {
+        const ids = new Set(s.links);
+        highlight(s.nodes || [], (l) => ids.has(l.id));
+      }
+      scenarioCard(s);
+    };
+    $("#scenarios").append(b);
+  });
+  $("#real-controls").classList.toggle("hidden", mode === "demo");
+  if (mode !== "demo") {
+    $("#modules").innerHTML = "";
+    D.modules.forEach((m) => {
+      const b = document.createElement("button");
+      b.setAttribute("aria-pressed", "false");
+      b.innerHTML = `<span>${esc(m.label)}</span><span>${m.links}</span><code>${esc(m.code)}</code>`;
+      b.onclick = () => {
+        press(b);
+        if (mode === "geo") geoHighlight(connectionsOf((c) => c.modules.includes(m.id)));
+        else highlight([], (l) => l.modules.includes(m.id));
+        $("#details").innerHTML = `<h3>${T.Module} ${esc(m.label)}</h3><div class="sub">${T.optionCode} ${esc(m.code)}</div>
+          <table><tr><td class="p">${T.Connections}</td><td>${m.links}</td></tr>
+          <tr><td class="p">${T.Configurations}</td><td>${m.configs.map(esc).join(", ") || T.none}</td></tr></table>`;
+      };
+      $("#modules").append(b);
+    });
+    const opts = [...D.nodes.map((n) => n.label), ...new Set(D.all.map((l) => l.signal))].sort();
+    $("#search-list").innerHTML = opts.map((o) => `<option value="${esc(o)}">`).join("");
+  }
+  const dot = (c, t, shape = "dot") => `<span><i class="${shape}" style="background:${c}"></i>${t}</span>`;
+  $("#legend").innerHTML = mode === "demo"
+    ? layerNames().map((name, i) => dot(C["l" + i], esc(name))).join("") +
+      dot(C.issue, T.legIssue) + dot(C.hl, T.legFlow, "bar")
+    : mode === "real"
+    ? dot(C.connector, T.legConnSize) + dot(C.mini, T.legBoth, "bar") +
+      dot(C.maxi, T.legMaxi, "bar") + dot(C.edge, T.legThick, "bar") + dot(C.hl, T.legFlow, "bar")
+    : dot(G.tube, T.legTubeBoth, "bar") + dot(G["tube-maxi"], T.legTubeMaxi, "bar") +
+      dot(G.suspect, T.legSuspect, "bar") + dot(G.connector, T.Connector) +
+      dot(G.terminal, T.terminal) + dot(G.fixing, T.legClip) + dot(G.box, T.legBox) +
+      dot(G.hl, T.legRoute, "bar");
+}
+function reset() {
+  hl = { nodes: new Set(), links: new Set(), active: false };
+  geoHL = { segs: new Set(), items: new Set() };
+  document.querySelectorAll("[aria-pressed].on").forEach((b) => { b.setAttribute("aria-pressed", "false"); b.classList.remove("on"); });
+  $("#scen-text").innerHTML = "";
+  $("#details").innerHTML = PICK();
+  activeScenario = null;
+  if (mode === "geo") { geoStyle(); if (geo) geoFit(geo.segs, 800); return; }
+  refresh();
+  graph?.zoomToFit(800, 30);
+}
+async function setMode(m) {
+  mode = m;
+  cfg = "all";
+  $("#config").value = "all";
+  ["demo", "real", "geo"].forEach((k) => $("#btn-" + k).setAttribute("aria-pressed", String(m === k)));
+  hl = { nodes: new Set(), links: new Set(), active: false };
+  geoHL = { segs: new Set(), items: new Set() };
+  activeScenario = null;
+  $("#scen-text").innerHTML = "";
+  $("#details").innerHTML = PICK();
+  const isGeo = m === "geo";
+  $("#fg").classList.toggle("hidden", isGeo);
+  $("#geo").classList.toggle("hidden", !isGeo);
+  $("#tip").classList.add("hidden");
+  buildSidebar();
+  if (isGeo) {
+    graph.pauseAnimation();
+    if (!geo) { $("#stats").textContent = T.loading; await geoInit(); buildSidebar(); }
+    geoResize();
+    geoStyle();
+    if (!geo.raf) geoLoop();
+  } else {
+    loadData();
+    setTimeout(() => graph.resumeAnimation(), 50);  // after the new data is processed
+  }
+}
+
+$("#btn-demo").onclick = () => mode !== "demo" && setMode("demo");
+$("#btn-real").onclick = () => mode !== "real" && setMode("real");
+$("#btn-geo").onclick = () => mode !== "geo" && setMode("geo");
+$("#reset").onclick = () => reset();
+document.querySelectorAll("#lang button").forEach((b) => {
+  b.onclick = () => {
+    if (b.dataset.lang === lang) return;
+    lang = b.dataset.lang;
+    T = I18N[lang];
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+    const keep = activeScenario;
+    applyStatic();
+    buildSidebar();
+    $("#details").innerHTML = PICK();
+    if (keep !== null) {  // the highlight stays; show its text in the new language
+      activeScenario = keep;
+      press($("#scenarios").children[keep]);
+      scenarioCard(currentData().scenarios[keep]);
+    }
+    if (mode === "demo" || mode === "real") refresh();
+  };
+});
+$("#labels").onchange = (e) => { showLabels = e.target.checked; mode === "geo" ? geoStyle() : refresh(); };
+$("#config").onchange = (e) => { cfg = e.target.value; mode === "geo" ? geoStyle() : refresh(); };
+$("#search").onchange = (e) => {
+  const v = e.target.value.trim();
+  if (!v) return;
+  if (mode === "geo") {
+    const item = geo?.items.find((m) => m.userData.item.label === v);
+    if (item) { geoSelect(item); return; }
+    const ids = connectionsOf((c) => c.signal === v);
+    if (ids.length) geoHighlight(ids);
+    $("#details").innerHTML = ids.length ? `<h3>${esc(v)}</h3><div class="sub">${T.signalRoute(ids.length)}</div>`
+                                         : `<div class="sub">${T.nothing(esc(v))}</div>`;
+    return;
+  }
+  const { nodes } = graph.graphData();
+  const n = nodes.find((x) => x.label === v);
+  if (n) { selectNode(n); focus(n); return; }
+  highlight([], (l) => l.signal === v);
+  const count = hl.links.size;
+  $("#details").innerHTML = count ? `<h3>${esc(v)}</h3><div class="sub">${T.signalCount(count)}</div>`
+                                  : `<div class="sub">${T.nothing(esc(v))}</div>`;
+};
+new ResizeObserver(() => {
+  if (graph) graph.width(el.clientWidth).height(el.clientHeight);
+  geoResize();
+}).observe($("#graph"));
+window.viewerGraph = () => graph;  // handles for debugging in the browser console
+window.viewerGeo = () => geo;
+applyStatic();
+$("#details").innerHTML = PICK();
+initGraph();
+graph.pauseAnimation();  // the first frame would otherwise run before the data is processed
+setMode("demo");
+</script>
+</body>
+</html>

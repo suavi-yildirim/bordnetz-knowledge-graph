@@ -1,0 +1,646 @@
+@prefix bn: <https://example.org/bordnetz#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://example.org/bordnetz> a owl:Ontology ;
+    rdfs:label "Mini-Ontologie Bordnetz (Demo)"@de,
+        "Mini wire-harness ontology (demo)"@en .
+
+bn:allocatedTo a owl:ObjectProperty ;
+    rdfs:domain bn:Function ;
+    rdfs:range bn:Ecu .
+
+bn:belongsToModule a owl:ObjectProperty ;
+    rdfs:comment "Wire, Connection or Connector is part of a module (KBL: Controlled_components)."@en ;
+    rdfs:range bn:Module .
+
+bn:carriesSignal a owl:ObjectProperty ;
+    rdfs:domain bn:Connection ;
+    rdfs:range bn:Signal .
+
+bn:colour a owl:DatatypeProperty ;
+    rdfs:domain bn:Wire ;
+    rdfs:range xsd:string .
+
+bn:consumedBy a owl:ObjectProperty ;
+    rdfs:domain bn:Signal ;
+    rdfs:range bn:Device .
+
+bn:coreOf a owl:ObjectProperty ;
+    rdfs:comment "Ader eines mehradrigen Kabels (KBL: Core_occurrence)."@de ;
+    rdfs:domain bn:Wire ;
+    rdfs:range bn:Wire .
+
+bn:crossSectionMm2 a owl:DatatypeProperty ;
+    rdfs:domain bn:Wire ;
+    rdfs:range xsd:decimal .
+
+bn:fromContact a owl:ObjectProperty ;
+    rdfs:domain bn:Connection ;
+    rdfs:range bn:ContactPoint .
+
+bn:hasConnector a owl:ObjectProperty ;
+    rdfs:domain bn:Harness ;
+    rdfs:range bn:Connector .
+
+bn:hasContactPoint a owl:ObjectProperty ;
+    rdfs:domain bn:Connector ;
+    rdfs:range bn:ContactPoint .
+
+bn:includesModule a owl:ObjectProperty ;
+    rdfs:domain bn:Configuration ;
+    rdfs:range bn:Module .
+
+bn:lengthMm a owl:DatatypeProperty ;
+    rdfs:domain bn:Wire ;
+    rdfs:range xsd:integer .
+
+bn:optionCode a owl:DatatypeProperty ;
+    rdfs:comment "Ausstattungsregel des Moduls, z. B. PR-Nummern-Ausdruck (KBL: Logistic_control_information)."@de ;
+    rdfs:domain bn:Module ;
+    rdfs:range xsd:string .
+
+bn:partNumber a owl:DatatypeProperty ;
+    rdfs:range xsd:string .
+
+bn:pluggedInto a owl:ObjectProperty ;
+    rdfs:domain bn:Connector ;
+    rdfs:range bn:Device .
+
+bn:providedBy a owl:ObjectProperty ;
+    rdfs:domain bn:Signal ;
+    rdfs:range bn:Device .
+
+bn:realisedBy a owl:ObjectProperty ;
+    rdfs:domain bn:Connection ;
+    rdfs:range bn:Wire .
+
+bn:requiredCrossSectionMm2 a owl:DatatypeProperty ;
+    rdfs:domain bn:Signal ;
+    rdfs:range xsd:decimal .
+
+bn:requiresModule a owl:ObjectProperty ;
+    rdfs:domain bn:Function ;
+    rdfs:range bn:Module .
+
+bn:signalName a owl:DatatypeProperty ;
+    rdfs:domain bn:Signal ;
+    rdfs:range xsd:string .
+
+bn:sourceSystem a owl:DatatypeProperty ;
+    rdfs:range xsd:string .
+
+bn:toContact a owl:ObjectProperty ;
+    rdfs:domain bn:Connection ;
+    rdfs:range bn:ContactPoint .
+
+bn:usesSignal a owl:ObjectProperty ;
+    rdfs:domain bn:Function ;
+    rdfs:range bn:Signal .
+
+<https://example.org/bordnetz/data/configuration/CFG_AMBIENTE> a bn:Configuration ;
+    rdfs:label "Ambiente"@de ;
+    bn:includesModule <https://example.org/bordnetz/data/module/M_AMBIENTE>,
+        <https://example.org/bordnetz/data/module/M_BASIS> .
+
+<https://example.org/bordnetz/data/configuration/CFG_BASIS> a bn:Configuration ;
+    rdfs:label "Basis"@de ;
+    bn:includesModule <https://example.org/bordnetz/data/module/M_BASIS> .
+
+<https://example.org/bordnetz/data/configuration/CFG_KOMFORT> a bn:Configuration ;
+    rdfs:label "Komfort"@de ;
+    bn:includesModule <https://example.org/bordnetz/data/module/M_BASIS>,
+        <https://example.org/bordnetz/data/module/M_KOMFORT> .
+
+<https://example.org/bordnetz/data/configuration/CFG_VOLL> a bn:Configuration ;
+    rdfs:label "Vollausstattung"@de ;
+    bn:includesModule <https://example.org/bordnetz/data/module/M_AMBIENTE>,
+        <https://example.org/bordnetz/data/module/M_BASIS>,
+        <https://example.org/bordnetz/data/module/M_KOMFORT> .
+
+<https://example.org/bordnetz/data/connection/C01> a bn:Connection ;
+    rdfs:label "C01" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/KL30_TSG> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X1.1> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W01> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X2.1> .
+
+<https://example.org/bordnetz/data/connection/C02> a bn:Connection ;
+    rdfs:label "C02" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/KL31> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X1.2> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W02> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X2.2> .
+
+<https://example.org/bordnetz/data/connection/C03> a bn:Connection ;
+    rdfs:label "C03" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/LIN_TUER> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X1.3> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W03> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X2.3> .
+
+<https://example.org/bordnetz/data/connection/C04> a bn:Connection ;
+    rdfs:label "C04" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/FH_MOT_PLUS> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.4> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W04> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X3.1> .
+
+<https://example.org/bordnetz/data/connection/C05> a bn:Connection ;
+    rdfs:label "C05" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/FH_MOT_MINUS> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.5> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W05> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X3.2> .
+
+<https://example.org/bordnetz/data/connection/C06> a bn:Connection ;
+    rdfs:label "C06" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/SP_VERST> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.6> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W06> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X4.1> .
+
+<https://example.org/bordnetz/data/connection/C07> a bn:Connection ;
+    rdfs:label "C07" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/KL31> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.7> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W07> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X4.2> .
+
+<https://example.org/bordnetz/data/connection/C08> a bn:Connection ;
+    rdfs:label "C08" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/ZV_MOT> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.8> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W08> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X5.1> .
+
+<https://example.org/bordnetz/data/connection/C09> a bn:Connection ;
+    rdfs:label "C09" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/KL31> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.9> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W09> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X5.2> .
+
+<https://example.org/bordnetz/data/connection/C10> a bn:Connection ;
+    rdfs:label "C10" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/AMB_LED_PWN> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.10> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W10> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X6.1> .
+
+<https://example.org/bordnetz/data/connection/C11> a bn:Connection ;
+    rdfs:label "C11" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/KL31> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.11> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W11> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X6.2> .
+
+<https://example.org/bordnetz/data/connection/C12> a bn:Connection ;
+    rdfs:label "C12" ;
+    bn:carriesSignal <https://example.org/bordnetz/data/signal/SP_POS> ;
+    bn:fromContact <https://example.org/bordnetz/data/contact/X2.12> ;
+    bn:realisedBy <https://example.org/bordnetz/data/wire/W12> ;
+    bn:toContact <https://example.org/bordnetz/data/contact/X4.3> .
+
+<https://example.org/bordnetz/data/function/F_AMB> a bn:Function ;
+    rdfs:label "Ambientebeleuchtung"@de ;
+    bn:allocatedTo <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiresModule <https://example.org/bordnetz/data/module/M_AMBIENTE> ;
+    bn:usesSignal <https://example.org/bordnetz/data/signal/AMB_LED_PWM>,
+        <https://example.org/bordnetz/data/signal/LIN_TUER> .
+
+<https://example.org/bordnetz/data/function/F_FH> a bn:Function ;
+    rdfs:label "Fensterheber"@de ;
+    bn:allocatedTo <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiresModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:usesSignal <https://example.org/bordnetz/data/signal/FH_MOT_MINUS>,
+        <https://example.org/bordnetz/data/signal/FH_MOT_PLUS>,
+        <https://example.org/bordnetz/data/signal/KL30_TSG>,
+        <https://example.org/bordnetz/data/signal/LIN_TUER> .
+
+<https://example.org/bordnetz/data/function/F_SP> a bn:Function ;
+    rdfs:label "Spiegelverstellung"@de ;
+    bn:allocatedTo <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiresModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:usesSignal <https://example.org/bordnetz/data/signal/SP_VERST> .
+
+<https://example.org/bordnetz/data/function/F_SPH> a bn:Function ;
+    rdfs:label "Spiegelheizung"@de ;
+    bn:allocatedTo <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiresModule <https://example.org/bordnetz/data/module/M_KOMFORT> ;
+    bn:usesSignal <https://example.org/bordnetz/data/signal/SP_HEIZ> .
+
+<https://example.org/bordnetz/data/function/F_SPM> a bn:Function ;
+    rdfs:label "Spiegel-Memory"@de ;
+    bn:allocatedTo <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiresModule <https://example.org/bordnetz/data/module/M_KOMFORT> ;
+    bn:usesSignal <https://example.org/bordnetz/data/signal/SP_POS> .
+
+<https://example.org/bordnetz/data/function/F_ZV> a bn:Function ;
+    rdfs:label "Zentralverriegelung"@de ;
+    bn:allocatedTo <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiresModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:usesSignal <https://example.org/bordnetz/data/signal/LIN_TUER>,
+        <https://example.org/bordnetz/data/signal/ZV_MOT> .
+
+<https://example.org/bordnetz/data/harness/H_TVL> a bn:Harness ;
+    rdfs:label "Türleitungssatz vorne links"@de ;
+    bn:hasConnector <https://example.org/bordnetz/data/connector/X1>,
+        <https://example.org/bordnetz/data/connector/X2>,
+        <https://example.org/bordnetz/data/connector/X3>,
+        <https://example.org/bordnetz/data/connector/X4>,
+        <https://example.org/bordnetz/data/connector/X5>,
+        <https://example.org/bordnetz/data/connector/X6> ;
+    bn:partNumber "DEMO-4711" .
+
+<https://example.org/bordnetz/data/connector/X1> a bn:Connector ;
+    rdfs:label "X1 Türübergang (Karosserie)"@de ;
+    bn:hasContactPoint <https://example.org/bordnetz/data/contact/X1.1>,
+        <https://example.org/bordnetz/data/contact/X1.2>,
+        <https://example.org/bordnetz/data/contact/X1.3> ;
+    bn:partNumber "DEMO-CON-12" ;
+    bn:pluggedInto <https://example.org/bordnetz/data/device/BCM> ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/connector/X2> a bn:Connector ;
+    rdfs:label "X2 Türsteuergerät"@de ;
+    bn:hasContactPoint <https://example.org/bordnetz/data/contact/X2.1>,
+        <https://example.org/bordnetz/data/contact/X2.10>,
+        <https://example.org/bordnetz/data/contact/X2.11>,
+        <https://example.org/bordnetz/data/contact/X2.12>,
+        <https://example.org/bordnetz/data/contact/X2.2>,
+        <https://example.org/bordnetz/data/contact/X2.3>,
+        <https://example.org/bordnetz/data/contact/X2.4>,
+        <https://example.org/bordnetz/data/contact/X2.5>,
+        <https://example.org/bordnetz/data/contact/X2.6>,
+        <https://example.org/bordnetz/data/contact/X2.7>,
+        <https://example.org/bordnetz/data/contact/X2.8>,
+        <https://example.org/bordnetz/data/contact/X2.9> ;
+    bn:partNumber "DEMO-CON-16" ;
+    bn:pluggedInto <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/connector/X3> a bn:Connector ;
+    rdfs:label "X3 Fensterhebermotor"@de ;
+    bn:hasContactPoint <https://example.org/bordnetz/data/contact/X3.1>,
+        <https://example.org/bordnetz/data/contact/X3.2> ;
+    bn:partNumber "DEMO-CON-02" ;
+    bn:pluggedInto <https://example.org/bordnetz/data/device/M_FH> ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/connector/X4> a bn:Connector ;
+    rdfs:label "X4 Außenspiegel"@de ;
+    bn:hasContactPoint <https://example.org/bordnetz/data/contact/X4.1>,
+        <https://example.org/bordnetz/data/contact/X4.2>,
+        <https://example.org/bordnetz/data/contact/X4.3> ;
+    bn:partNumber "DEMO-CON-04" ;
+    bn:pluggedInto <https://example.org/bordnetz/data/device/SP_VL> ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/connector/X5> a bn:Connector ;
+    rdfs:label "X5 Türschloss"@de ;
+    bn:hasContactPoint <https://example.org/bordnetz/data/contact/X5.1>,
+        <https://example.org/bordnetz/data/contact/X5.2> ;
+    bn:partNumber "DEMO-CON-02" ;
+    bn:pluggedInto <https://example.org/bordnetz/data/device/ZV_VL> ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/connector/X6> a bn:Connector ;
+    rdfs:label "X6 Ambiente-LED"@de ;
+    bn:hasContactPoint <https://example.org/bordnetz/data/contact/X6.1>,
+        <https://example.org/bordnetz/data/contact/X6.2> ;
+    bn:partNumber "DEMO-CON-02" ;
+    bn:pluggedInto <https://example.org/bordnetz/data/device/LED_AMB> ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/signal/AMB_LED_PWM> a bn:Signal ;
+    rdfs:label "Ambiente-LED PWM"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/LED_AMB> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiredCrossSectionMm2 0.35 ;
+    bn:signalName "AMB_LED_PWM" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/signal/AMB_LED_PWN> a bn:Signal ;
+    bn:signalName "AMB_LED_PWN" .
+
+<https://example.org/bordnetz/data/signal/SP_HEIZ> a bn:Signal ;
+    rdfs:label "Spiegelheizung"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/SP_VL> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiredCrossSectionMm2 0.75 ;
+    bn:signalName "SP_HEIZ" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/wire/W01> a bn:Wire ;
+    rdfs:label "W01" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "RD" ;
+    bn:crossSectionMm2 2.5 ;
+    bn:lengthMm 1450 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W02> a bn:Wire ;
+    rdfs:label "W02" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "BN" ;
+    bn:crossSectionMm2 2.5 ;
+    bn:lengthMm 1450 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W03> a bn:Wire ;
+    rdfs:label "W03" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "VT" ;
+    bn:crossSectionMm2 0.35 ;
+    bn:lengthMm 1450 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W04> a bn:Wire ;
+    rdfs:label "W04" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "BU" ;
+    bn:crossSectionMm2 1.5 ;
+    bn:lengthMm 620 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W05> a bn:Wire ;
+    rdfs:label "W05" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "GY" ;
+    bn:crossSectionMm2 0.35 ;
+    bn:lengthMm 620 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W06> a bn:Wire ;
+    rdfs:label "W06" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "GN" ;
+    bn:crossSectionMm2 0.5 ;
+    bn:lengthMm 540 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W07> a bn:Wire ;
+    rdfs:label "W07" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "BN" ;
+    bn:crossSectionMm2 0.5 ;
+    bn:lengthMm 540 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W08> a bn:Wire ;
+    rdfs:label "W08" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "YE" ;
+    bn:crossSectionMm2 0.75 ;
+    bn:lengthMm 480 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W09> a bn:Wire ;
+    rdfs:label "W09" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_BASIS> ;
+    bn:colour "BN" ;
+    bn:crossSectionMm2 0.75 ;
+    bn:lengthMm 480 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W10> a bn:Wire ;
+    rdfs:label "W10" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_AMBIENTE> ;
+    bn:colour "WH" ;
+    bn:crossSectionMm2 0.35 ;
+    bn:lengthMm 900 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W11> a bn:Wire ;
+    rdfs:label "W11" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_AMBIENTE> ;
+    bn:colour "BN" ;
+    bn:crossSectionMm2 0.35 ;
+    bn:lengthMm 900 ;
+    bn:sourceSystem "KBL" .
+
+<https://example.org/bordnetz/data/wire/W12> a bn:Wire ;
+    rdfs:label "W12" ;
+    bn:belongsToModule <https://example.org/bordnetz/data/module/M_KOMFORT> ;
+    bn:colour "OG" ;
+    bn:crossSectionMm2 0.35 ;
+    bn:lengthMm 540 ;
+    bn:sourceSystem "KBL" .
+
+bn:Harness a owl:Class ;
+    rdfs:label "Leitungssatz"@de,
+        "Harness"@en .
+
+<https://example.org/bordnetz/data/contact/X1.1> a bn:ContactPoint ;
+    rdfs:label "X1.1" .
+
+<https://example.org/bordnetz/data/contact/X1.2> a bn:ContactPoint ;
+    rdfs:label "X1.2" .
+
+<https://example.org/bordnetz/data/contact/X1.3> a bn:ContactPoint ;
+    rdfs:label "X1.3" .
+
+<https://example.org/bordnetz/data/contact/X2.1> a bn:ContactPoint ;
+    rdfs:label "X2.1" .
+
+<https://example.org/bordnetz/data/contact/X2.10> a bn:ContactPoint ;
+    rdfs:label "X2.10" .
+
+<https://example.org/bordnetz/data/contact/X2.11> a bn:ContactPoint ;
+    rdfs:label "X2.11" .
+
+<https://example.org/bordnetz/data/contact/X2.12> a bn:ContactPoint ;
+    rdfs:label "X2.12" .
+
+<https://example.org/bordnetz/data/contact/X2.2> a bn:ContactPoint ;
+    rdfs:label "X2.2" .
+
+<https://example.org/bordnetz/data/contact/X2.3> a bn:ContactPoint ;
+    rdfs:label "X2.3" .
+
+<https://example.org/bordnetz/data/contact/X2.4> a bn:ContactPoint ;
+    rdfs:label "X2.4" .
+
+<https://example.org/bordnetz/data/contact/X2.5> a bn:ContactPoint ;
+    rdfs:label "X2.5" .
+
+<https://example.org/bordnetz/data/contact/X2.6> a bn:ContactPoint ;
+    rdfs:label "X2.6" .
+
+<https://example.org/bordnetz/data/contact/X2.7> a bn:ContactPoint ;
+    rdfs:label "X2.7" .
+
+<https://example.org/bordnetz/data/contact/X2.8> a bn:ContactPoint ;
+    rdfs:label "X2.8" .
+
+<https://example.org/bordnetz/data/contact/X2.9> a bn:ContactPoint ;
+    rdfs:label "X2.9" .
+
+<https://example.org/bordnetz/data/contact/X3.1> a bn:ContactPoint ;
+    rdfs:label "X3.1" .
+
+<https://example.org/bordnetz/data/contact/X3.2> a bn:ContactPoint ;
+    rdfs:label "X3.2" .
+
+<https://example.org/bordnetz/data/contact/X4.1> a bn:ContactPoint ;
+    rdfs:label "X4.1" .
+
+<https://example.org/bordnetz/data/contact/X4.2> a bn:ContactPoint ;
+    rdfs:label "X4.2" .
+
+<https://example.org/bordnetz/data/contact/X4.3> a bn:ContactPoint ;
+    rdfs:label "X4.3" .
+
+<https://example.org/bordnetz/data/contact/X5.1> a bn:ContactPoint ;
+    rdfs:label "X5.1" .
+
+<https://example.org/bordnetz/data/contact/X5.2> a bn:ContactPoint ;
+    rdfs:label "X5.2" .
+
+<https://example.org/bordnetz/data/contact/X6.1> a bn:ContactPoint ;
+    rdfs:label "X6.1" .
+
+<https://example.org/bordnetz/data/contact/X6.2> a bn:ContactPoint ;
+    rdfs:label "X6.2" .
+
+<https://example.org/bordnetz/data/device/LED_AMB> a bn:Actuator ;
+    rdfs:label "Ambiente-LED Tür"@de .
+
+<https://example.org/bordnetz/data/device/ZV_VL> a bn:Actuator ;
+    rdfs:label "Türschloss vorne links"@de .
+
+<https://example.org/bordnetz/data/signal/FH_MOT_MINUS> a bn:Signal ;
+    rdfs:label "Fensterheber Motor −"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/M_FH> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiredCrossSectionMm2 1.5 ;
+    bn:signalName "FH_MOT_MINUS" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/signal/FH_MOT_PLUS> a bn:Signal ;
+    rdfs:label "Fensterheber Motor +"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/M_FH> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiredCrossSectionMm2 1.5 ;
+    bn:signalName "FH_MOT_PLUS" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/signal/KL30_TSG> a bn:Signal ;
+    rdfs:label "Dauerplus Türsteuergerät"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/BCM> ;
+    bn:requiredCrossSectionMm2 2.5 ;
+    bn:signalName "KL30_TSG" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/signal/SP_POS> a bn:Signal ;
+    rdfs:label "Spiegelposition (Memory)"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/SP_VL> ;
+    bn:requiredCrossSectionMm2 0.35 ;
+    bn:signalName "SP_POS" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/signal/SP_VERST> a bn:Signal ;
+    rdfs:label "Spiegelverstellung"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/SP_VL> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiredCrossSectionMm2 0.5 ;
+    bn:signalName "SP_VERST" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/signal/ZV_MOT> a bn:Signal ;
+    rdfs:label "Zentralverriegelung Motor"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/ZV_VL> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiredCrossSectionMm2 0.75 ;
+    bn:signalName "ZV_MOT" ;
+    bn:sourceSystem "E/E" .
+
+bn:Ecu a owl:Class ;
+    rdfs:label "Steuergerät"@de,
+        "ECU"@en ;
+    rdfs:subClassOf bn:Device .
+
+<https://example.org/bordnetz/data/device/M_FH> a bn:Actuator ;
+    rdfs:label "Fensterhebermotor"@de .
+
+bn:Actuator a owl:Class ;
+    rdfs:label "Aktor"@de,
+        "Actuator"@en ;
+    rdfs:subClassOf bn:Device .
+
+<https://example.org/bordnetz/data/device/BCM> a bn:Ecu ;
+    rdfs:label "Body Control Module"@de .
+
+<https://example.org/bordnetz/data/device/SP_VL> a bn:Actuator ;
+    rdfs:label "Außenspiegel vorne links"@de .
+
+<https://example.org/bordnetz/data/signal/KL31> a bn:Signal ;
+    rdfs:label "Masse"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/BCM> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:requiredCrossSectionMm2 0.35 ;
+    bn:signalName "KL31" ;
+    bn:sourceSystem "E/E" .
+
+<https://example.org/bordnetz/data/signal/LIN_TUER> a bn:Signal ;
+    rdfs:label "LIN-Bus Tür"@de ;
+    bn:consumedBy <https://example.org/bordnetz/data/device/TSG_VL> ;
+    bn:providedBy <https://example.org/bordnetz/data/device/BCM> ;
+    bn:requiredCrossSectionMm2 0.35 ;
+    bn:signalName "LIN_TUER" ;
+    bn:sourceSystem "E/E" .
+
+bn:Configuration a owl:Class ;
+    rdfs:label "Fahrzeugkonfiguration"@de,
+        "Vehicle configuration"@en .
+
+bn:Device a owl:Class ;
+    rdfs:label "Gerät"@de,
+        "Device"@en .
+
+<https://example.org/bordnetz/data/module/M_AMBIENTE> a bn:Module ;
+    rdfs:label "Ambientebeleuchtung"@de .
+
+<https://example.org/bordnetz/data/module/M_KOMFORT> a bn:Module ;
+    rdfs:label "Komfort (Spiegel-Memory, Spiegelheizung)"@de .
+
+bn:Module a owl:Class ;
+    rdfs:label "Modul"@de,
+        "Module"@en ;
+    rdfs:comment "Variantenbaustein des Leitungssatzes (z. B. Basis, Komfort)."@de .
+
+bn:Connector a owl:Class ;
+    rdfs:label "Stecker"@de,
+        "Connector"@en .
+
+bn:Function a owl:Class ;
+    rdfs:label "Funktion"@de,
+        "Function"@en .
+
+bn:Connection a owl:Class ;
+    rdfs:label "Verbindung"@de,
+        "Connection"@en ;
+    rdfs:comment "Logische Verbindung zwischen zwei Kontaktstellen, realisiert durch eine Leitung."@de .
+
+<https://example.org/bordnetz/data/module/M_BASIS> a bn:Module ;
+    rdfs:label "Basis"@de .
+
+bn:Signal a owl:Class ;
+    rdfs:label "Signal"@de,
+        "Signal"@en .
+
+<https://example.org/bordnetz/data/device/TSG_VL> a bn:Ecu ;
+    rdfs:label "Türsteuergerät vorne links"@de .
+
+bn:Wire a owl:Class ;
+    rdfs:label "Leitung"@de,
+        "Wire"@en .
+
+bn:ContactPoint a owl:Class ;
+    rdfs:label "Kontaktstelle"@de,
+        "Contact point"@en .
+

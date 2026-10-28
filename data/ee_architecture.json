@@ -1,0 +1,37 @@
+{
+  "_comment": "FIKTIVES E/E-Architekturmodell der Fahrertür (Funktionen, Steuergeräte, Signale, Varianten). Alle Werte erfunden.",
+  "devices": [
+    {"id": "BCM",     "type": "Ecu",      "label": "Body Control Module",              "connector": "X1"},
+    {"id": "TSG_VL",  "type": "Ecu",      "label": "Türsteuergerät vorne links",       "connector": "X2"},
+    {"id": "M_FH",    "type": "Actuator", "label": "Fensterhebermotor",                "connector": "X3"},
+    {"id": "SP_VL",   "type": "Actuator", "label": "Außenspiegel vorne links",         "connector": "X4"},
+    {"id": "ZV_VL",   "type": "Actuator", "label": "Türschloss vorne links",           "connector": "X5"},
+    {"id": "LED_AMB", "type": "Actuator", "label": "Ambiente-LED Tür",                 "connector": "X6"}
+  ],
+  "signals": [
+    {"name": "KL30_TSG",     "label": "Dauerplus Türsteuergerät", "from": "BCM",    "to": "TSG_VL",  "min_cross_section_mm2": 2.5},
+    {"name": "KL31",         "label": "Masse",                    "from": "TSG_VL", "to": "BCM",     "min_cross_section_mm2": 0.35},
+    {"name": "LIN_TUER",     "label": "LIN-Bus Tür",              "from": "BCM",    "to": "TSG_VL",  "min_cross_section_mm2": 0.35},
+    {"name": "FH_MOT_PLUS",  "label": "Fensterheber Motor +",     "from": "TSG_VL", "to": "M_FH",    "min_cross_section_mm2": 1.5},
+    {"name": "FH_MOT_MINUS", "label": "Fensterheber Motor −",     "from": "TSG_VL", "to": "M_FH",    "min_cross_section_mm2": 1.5},
+    {"name": "SP_VERST",     "label": "Spiegelverstellung",       "from": "TSG_VL", "to": "SP_VL",   "min_cross_section_mm2": 0.5},
+    {"name": "SP_POS",       "label": "Spiegelposition (Memory)", "from": "SP_VL",  "to": "TSG_VL",  "min_cross_section_mm2": 0.35},
+    {"name": "SP_HEIZ",      "label": "Spiegelheizung",           "from": "TSG_VL", "to": "SP_VL",   "min_cross_section_mm2": 0.75},
+    {"name": "ZV_MOT",       "label": "Zentralverriegelung Motor","from": "TSG_VL", "to": "ZV_VL",   "min_cross_section_mm2": 0.75},
+    {"name": "AMB_LED_PWM",  "label": "Ambiente-LED PWM",         "from": "TSG_VL", "to": "LED_AMB", "min_cross_section_mm2": 0.35}
+  ],
+  "functions": [
+    {"id": "F_FH",  "label": "Fensterheber",         "ecu": "TSG_VL", "signals": ["KL30_TSG", "LIN_TUER", "FH_MOT_PLUS", "FH_MOT_MINUS"], "module": "M_BASIS"},
+    {"id": "F_SP",  "label": "Spiegelverstellung",   "ecu": "TSG_VL", "signals": ["SP_VERST"],               "module": "M_BASIS"},
+    {"id": "F_SPM", "label": "Spiegel-Memory",       "ecu": "TSG_VL", "signals": ["SP_POS"],                 "module": "M_KOMFORT"},
+    {"id": "F_SPH", "label": "Spiegelheizung",       "ecu": "TSG_VL", "signals": ["SP_HEIZ"],                "module": "M_KOMFORT"},
+    {"id": "F_ZV",  "label": "Zentralverriegelung",  "ecu": "TSG_VL", "signals": ["LIN_TUER", "ZV_MOT"],     "module": "M_BASIS"},
+    {"id": "F_AMB", "label": "Ambientebeleuchtung",  "ecu": "TSG_VL", "signals": ["LIN_TUER", "AMB_LED_PWM"], "module": "M_AMBIENTE"}
+  ],
+  "configurations": [
+    {"id": "CFG_BASIS",    "label": "Basis",              "modules": ["M_BASIS"]},
+    {"id": "CFG_KOMFORT",  "label": "Komfort",            "modules": ["M_BASIS", "M_KOMFORT"]},
+    {"id": "CFG_AMBIENTE", "label": "Ambiente",           "modules": ["M_BASIS", "M_AMBIENTE"]},
+    {"id": "CFG_VOLL",     "label": "Vollausstattung",    "modules": ["M_BASIS", "M_KOMFORT", "M_AMBIENTE"]}
+  ]
+}
