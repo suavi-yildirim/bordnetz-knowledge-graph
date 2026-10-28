@@ -81,6 +81,9 @@
   .foot { color: var(--muted); font-size: 11.5px; margin-top: 18px; }
   .foot a { color: var(--accent); }
   .hidden { display: none !important; }
+  /* #geo+clean: only the 3D view, e.g. for screenshots */
+  body.clean header, body.clean aside, body.clean #hint { display: none; }
+  body.clean main { grid-template-columns: 1fr; }
   @media (max-width: 820px) {
     body { height: auto; }
     main { grid-template-columns: 1fr; }
@@ -479,7 +482,8 @@ async function geoInit() {
           ray: new THREE.Raycaster(), mouse: new THREE.Vector2() };
   geoResize();
   geoStyle();
-  geoFit(segs, 0, new THREE.Vector3(0.9, 0.7, 1.1));
+  // clean mode (screenshots): seen more from above, like a harness drawing
+  geoFit(segs, 0, document.body.classList.contains("clean") ? new THREE.Vector3(0.25, 1.0, 0.55) : new THREE.Vector3(0.9, 0.7, 1.1));
 
   const dom = renderer.domElement;
   dom.addEventListener("pointermove", (e) => { const hit = geoPick(e); showTip(e, hit); dom.style.cursor = hit ? "pointer" : ""; });
@@ -703,6 +707,7 @@ async function setMode(m) {
   cfg = "all";
   $("#config").value = "all";
   ["demo", "real", "geo"].forEach((k) => $("#btn-" + k).setAttribute("aria-pressed", String(m === k)));
+  history.replaceState(null, "", "#" + m + (document.body.classList.contains("clean") ? "+clean" : "") + "+" + lang);
   hl = { nodes: new Set(), links: new Set(), active: false };
   geoHL = { segs: new Set(), items: new Set() };
   activeScenario = null;
@@ -735,6 +740,7 @@ document.querySelectorAll("#lang button").forEach((b) => {
     lang = b.dataset.lang;
     T = I18N[lang];
     try { localStorage.setItem("lang", lang); } catch (e) {}
+    history.replaceState(null, "", "#" + mode + (document.body.classList.contains("clean") ? "+clean" : "") + "+" + lang);
     const keep = activeScenario;
     applyStatic();
     buildSidebar();
@@ -777,9 +783,14 @@ window.viewerGraph = () => graph;  // handles for debugging in the browser conso
 window.viewerGeo = () => geo;
 applyStatic();
 $("#details").innerHTML = PICK();
+// deep links: #demo, #real, #geo; "+clean" hides header and sidebar (e.g. #geo+clean)
+const hash = location.hash.slice(1).split("+");
+if (hash.includes("clean")) document.body.classList.add("clean");
+const hashLang = hash.find((h) => h === "de" || h === "en");  // e.g. #geo+de from the German portfolio page
+if (hashLang && hashLang !== lang) { lang = hashLang; T = I18N[lang]; applyStatic(); }
 initGraph();
 graph.pauseAnimation();  // the first frame would otherwise run before the data is processed
-setMode("demo");
+setMode(["demo", "real", "geo"].includes(hash[0]) ? hash[0] : "demo");
 </script>
 </body>
 </html>
